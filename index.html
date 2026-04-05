@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChromaMix Pro — Multi-Color Blending Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   THEME VARIABLES
+═══════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg:          #07090d;
+  --bg2:         #0d1117;
+  --surface:     #111820;
+  --surface2:    #1a2232;
+  --surface3:    #212d40;
+  --border:      rgba(255,255,255,0.07);
+  --border2:     rgba(255,255,255,0.12);
+  --border3:     rgba(255,255,255,0.2);
+  --text:        #edf2f7;
+  --text2:       #94a3b8;
+  --text3:       #4a5568;
+  --shadow:      rgba(0,0,0,0.6);
+  --glow:        rgba(99,179,237,0.15);
+}
+
+[data-theme="light"] {
+  --bg:          #f0f4f8;
+  --bg2:         #e2e8f0;
+  --surface:     #ffffff;
+  --surface2:    #f8fafc;
+  --surface3:    #edf2f7;
+  --border:      rgba(0,0,0,0.07);
+  --border2:     rgba(0,0,0,0.12);
+  --border3:     rgba(0,0,0,0.2);
+  --text:        #0f172a;
+  --text2:       #475569;
+  --text3:       #94a3b8;
+  --shadow:      rgba(0,0,0,0.12);
+  --glow:        rgba(59,130,246,0.1);
+}
+
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.35s ease, color 0.35s ease;
+  overflow-x: hidden;
+}
+
+
+
+/* Mesh BG */
+.bg-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bg-mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.07;
+  transition: background 0.5s;
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 5rem;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  margin-bottom: 1.75rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px var(--shadow);
+  transition: background 0.35s, border-color 0.35s;
+  flex-wrap: wrap;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: conic-gradient(from 45deg, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6, #ec4899, #f97316);
+  box-shadow: 0 0 24px rgba(139,92,246,0.35);
+  flex-shrink: 0;
+  animation: logoSpin 12s linear infinite;
+}
+
+@keyframes logoSpin {
+  to { filter: hue-rotate(360deg); }
+}
+
+.logo-text h1 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.logo-text p {
+  font-size: 0.6rem;
+  color: var(--text2);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Unit toggle */
+.unit-toggle {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.unit-btn {
+  padding: 0.35rem 0.8rem;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.unit-btn.active {
+  background: var(--surface3);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+
+/* Theme toggle */
+.theme-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.theme-btn:hover { color: var(--text); border-color: var(--border3); }
+
+.theme-btn svg { width: 18px; height: 18px; }
+
+/* ═══════════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════════ */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .main-layout { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════
+   PANEL / CARD
+═══════════════════════════════════════════ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: background 0.35s, border-color 0.35s;
+  box-shadow: 0 2px 16px var(--shadow);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.panel-title {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-title::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--border3);
+}
+
+/* ═══════════════════════════════════════════
+   COLOR CARDS
+═══════════════════════════════════════════ */
+#color-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.color-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.35s;
+  animation: cardIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  position: relative;
+}
+
+.color-card:hover {
+  border-color: var(--border2);
+  box-shadow: 0 4px 20px var(--shadow);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.color-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+/* Swatch + color picker */
+.swatch-picker {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  cursor: pointer;
+  overflow: hidden;
+  border: 2px solid var(--border2);
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.swatch-picker:hover { border-color: var(--border3); transform: scale(1.07); }
+
+.swatch-picker input[type="color"] {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.swatch-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: background-color 0.15s;
+}
+
+.color-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.color-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.color-index {
+  font-size: 0.6rem;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.hex-input {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.3rem 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--text);
+  outline: none;
+  width: 110px;
+  letter-spacing: 0.04em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hex-input:focus {
+  border-color: var(--border3);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.hex-input.invalid {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248,113,113,0.15);
+}
+
+.remove-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-btn:hover { border-color: #f87171; color: #f87171; background: rgba(248,113,113,0.08); }
+.remove-btn svg { width: 13px; height: 13px; }
+
+/* ── Quantity Controls ── */
+.qty-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 44px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.qty-slider-wrap {
+  position: relative;
+}
+
+.qty-slider-label {
+  font-size: 0.58rem;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.qty-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.qty-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 2.5px solid var(--bg);
+  box-shadow: 0 2px 8px var(--shadow);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.qty-slider::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+.qty-number {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.3rem 0.45rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text);
+  outline: none;
+  text-align: center;
+  min-width: 0;
+  transition: border-color 0.2s;
+}
+
+.qty-number:focus { border-color: var(--border3); }
+
+.qty-pct-badge {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.68rem;
+  color: var(--text2);
+  text-align: center;
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Add Color Button ── */
+.add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.85rem;
+  margin-top: 1rem;
+  border: 1.5px dashed var(--border2);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.add-btn:hover {
+  border-color: var(--border3);
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.add-btn svg { width: 16px; height: 16px; }
+
+/* ── Total row ── */
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.72rem;
+}
+
+.total-label { color: var(--text2); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.total-value { font-weight: 500; color: var(--text); }
+
+.total-warn { color: #f59e0b; }
+
+/* ═══════════════════════════════════════════
+   RESULT PANEL
+═══════════════════════════════════════════ */
+.result-panel {
+  position: sticky;
+  top: 1.5rem;
+}
+
+/* Big swatch */
+.result-swatch-wrap {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px var(--shadow);
+  position: relative;
+}
+
+.result-swatch {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  transition: background-color 0.12s;
+  display: flex;
+  align-items: flex-end;
+}
+
+.result-swatch-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.35) 100%);
+  pointer-events: none;
+}
+
+.result-swatch-label {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  font-family: 'Clash Display', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Outputs */
+.output-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.output-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  transition: border-color 0.2s, background 0.35s;
+}
+
+.output-row:hover { border-color: var(--border2); }
+
+.output-fmt {
+  font-size: 0.6rem;
+  color: var(--text3);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.output-val {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-btn {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 0.28rem 0.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.copy-btn:hover { color: var(--text); border-color: var(--border3); }
+.copy-btn:active { transform: scale(0.94); }
+.copy-btn.ok { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.08); }
+.copy-btn svg { width: 10px; height: 10px; }
+
+/* Gradient strip */
+.gradient-strip {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+  transition: background 0.12s;
+}
+
+/* Composition bars */
+.comp-section { margin-bottom: 1rem; }
+
+.comp-title {
+  font-size: 0.6rem;
+  color: var(--text3);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.65rem;
+}
+
+.comp-bars { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.comp-bar-row { display: flex; align-items: center; gap: 0.6rem; }
+
+.comp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.comp-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.comp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
+.comp-pct {
+  font-size: 0.65rem;
+  color: var(--text2);
+  width: 38px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+#toasts {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 8px 30px var(--shadow);
+  animation: tIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  white-space: nowrap;
+}
+
+.toast.out { animation: tOut 0.2s ease-in forwards; }
+
+.toast-pip { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+
+@keyframes tIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.9) translateY(-6px); }
+}
+
+/* ═══════════════════════════════════════════
+   PAGE ANIMATIONS
+═══════════════════════════════════════════ */
+header { animation: fadeUp 0.4s ease both; }
+.main-layout > *:nth-child(1) { animation: fadeUp 0.4s ease 0.08s both; }
+.main-layout > *:nth-child(2) { animation: fadeUp 0.4s ease 0.15s both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 999px; }
+
+/* responsive */
+@media (max-width: 540px) {
+  .qty-controls { grid-template-columns: 1fr 60px; }
+  .qty-pct-badge { display: none; }
+  header { padding: 0.9rem 1rem; }
+  .wrap { padding: 1rem 0.85rem 4rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Ambient mesh blobs -->
+<div class="bg-mesh" aria-hidden="true">
+  <div class="bg-mesh-blob" id="blob1" style="width:500px;height:500px;top:-100px;left:-150px;background:#6366f1;"></div>
+  <div class="bg-mesh-blob" id="blob2" style="width:400px;height:400px;bottom:-80px;right:-100px;background:#ec4899;"></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="logo-text">
+        <h1>ChromaMix Pro</h1>
+        <p>Multi-Color Blending Lab</p>
+      </div>
+    </div>
+    <div class="header-controls">
+      <!-- Unit toggle -->
+      <div class="unit-toggle" role="group" aria-label="Volume unit selector">
+        <button class="unit-btn active" data-unit="pct" aria-pressed="true">%</button>
+        <button class="unit-btn" data-unit="ml" aria-pressed="false">mL</button>
+        <button class="unit-btn" data-unit="l" aria-pressed="false">L</button>
+      </div>
+      <!-- Theme toggle -->
+      <button class="theme-btn" id="themeBtn" aria-label="Toggle dark/light mode" title="Toggle theme">
+        <svg id="themeIconDark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+        <svg id="themeIconLight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MAIN LAYOUT ── -->
+  <div class="main-layout">
+
+    <!-- LEFT: Color inputs -->
+    <section class="panel" aria-label="Color mix inputs">
+      <div class="panel-header">
+        <span class="panel-title">Colors</span>
+        <span id="colorCount" style="font-size:0.65rem;color:var(--text3);">2 colors</span>
+      </div>
+
+      <div id="color-list" role="list" aria-label="Color list"></div>
+
+      <button class="add-btn" id="addColorBtn" aria-label="Add a new color">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Color
+      </button>
+
+      <!-- Total -->
+      <div class="total-row" aria-live="polite">
+        <span class="total-label">Total</span>
+        <span class="total-value" id="totalDisplay">—</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: Result -->
+    <aside class="panel result-panel" aria-label="Blend result">
+      <div class="panel-header">
+        <span class="panel-title">Result</span>
+      </div>
+
+      <!-- Swatch -->
+      <div class="result-swatch-wrap">
+        <div class="result-swatch" id="resultSwatch" role="img" aria-label="Blended color preview"></div>
+        <div class="result-swatch-overlay"></div>
+        <div class="result-swatch-label" id="resultHexLabel">#—</div>
+      </div>
+
+      <!-- Gradient strip -->
+      <div class="gradient-strip" id="gradientStrip" aria-hidden="true"></div>
+
+      <!-- Outputs -->
+      <div class="output-grid" role="list">
+        <div class="output-row" role="listitem">
+          <span class="output-fmt">HEX</span>
+          <span class="output-val" id="outHex">—</span>
+          <button class="copy-btn" data-copy="hex" aria-label="Copy HEX">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="output-row" role="listitem">
+          <span class="output-fmt">RGB</span>
+          <span class="output-val" id="outRgb">—</span>
+          <button class="copy-btn" data-copy="rgb" aria-label="Copy RGB">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="output-row" role="listitem">
+          <span class="output-fmt">HSL</span>
+          <span class="output-val" id="outHsl">—</span>
+          <button class="copy-btn" data-copy="hsl" aria-label="Copy HSL">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <!-- Composition breakdown -->
+      <div class="comp-section">
+        <div class="comp-title">Composition</div>
+        <div class="comp-bars" id="compBars" aria-label="Color composition breakdown"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let state = {
+  unit: 'pct',   // 'pct' | 'ml' | 'l'
+  theme: 'dark',
+  colors: [
+    { id: uid(), hex: '#f97316', qty: 50 },
+    { id: uid(), hex: '#8b5cf6', qty: 50 },
+  ],
+};
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+// default quantities per unit
+const UNIT_DEFAULTS = { pct: 50, ml: 100, l: 0.5 };
+const UNIT_MAX      = { pct: 100, ml: 1000, l: 10 };
+const UNIT_STEP     = { pct: 1, ml: 1, l: 0.01 };
+const UNIT_LABEL    = { pct: '%', ml: 'mL', l: 'L' };
+
+// ═══════════════════════════════════════════════════════
+//  MATH ENGINE
+// ═══════════════════════════════════════════════════════
+
+function hexToRgb(hex) {
+  const c = hex.replace('#', '').trim();
+  if (c.length === 3) {
+    const r = parseInt(c[0]+c[0],16), g = parseInt(c[1]+c[1],16), b = parseInt(c[2]+c[2],16);
+    return isNaN(r+g+b) ? null : {r,g,b};
+  }
+  if (c.length === 6) {
+    const r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
+    return isNaN(r+g+b) ? null : {r,g,b};
+  }
+  return null;
+}
+
+function rgbToHex({r,g,b}) {
+  return '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+}
+
+function rgbString({r,g,b}) { return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`; }
+
+function rgbToHsl({r,g,b}) {
+  const rn=r/255, gn=g/255, bn=b/255;
+  const max=Math.max(rn,gn,bn), min=Math.min(rn,gn,bn);
+  let h=0, s=0;
+  const l=(max+min)/2;
+  if (max!==min) {
+    const d=max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case rn: h=((gn-bn)/d+(gn<bn?6:0))/6; break;
+      case gn: h=((bn-rn)/d+2)/6; break;
+      case bn: h=((rn-gn)/d+4)/6; break;
+    }
+  }
+  return `hsl(${Math.round(h*360)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%)`;
+}
+
+/**
+ * Blend multiple colors by their qty weights using weighted RGB average.
+ */
+function blendMultiple(colorEntries) {
+  const valid = colorEntries.filter(e => hexToRgb(e.hex) && e.qty > 0);
+  if (!valid.length) return {r:128,g:128,b:128};
+  const total = valid.reduce((s,e) => s+e.qty, 0);
+  if (total === 0) return {r:128,g:128,b:128};
+  let r=0, g=0, b=0;
+  for (const e of valid) {
+    const rgb = hexToRgb(e.hex);
+    const w = e.qty / total;
+    r += rgb.r * w;
+    g += rgb.g * w;
+    b += rgb.b * w;
+  }
+  return { r: Math.round(r), g: Math.round(g), b: Math.round(b) };
+}
+
+/**
+ * Compute normalized percentages for each color's contribution.
+ */
+function getContributions() {
+  const valid = state.colors.filter(c => hexToRgb(c.hex));
+  const total = valid.reduce((s,c) => s+c.qty, 0);
+  return valid.map(c => ({ ...c, pct: total > 0 ? (c.qty/total*100) : 0 }));
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+
+function render() {
+  renderColorList();
+  renderResult();
+  renderTotal();
+  updateMeshBlobs();
+}
+
+/* ── Color list ── */
+function renderColorList() {
+  const list = document.getElementById('color-list');
+  const unit = state.unit;
+
+  // Sync existing cards or rebuild
+  // For simplicity, diff by id
+  const existingIds = [...list.querySelectorAll('.color-card')].map(el=>el.dataset.id);
+  const stateIds = state.colors.map(c=>c.id);
+
+  // Remove cards not in state
+  existingIds.forEach(id => {
+    if (!stateIds.includes(id)) list.querySelector(`[data-id="${id}"]`)?.remove();
+  });
+
+  // Add/update cards
+  state.colors.forEach((color, idx) => {
+    let card = list.querySelector(`[data-id="${color.id}"]`);
+    if (!card) {
+      card = buildColorCard(color, idx);
+      list.appendChild(card);
+    }
+    updateColorCard(card, color, idx, unit);
+  });
+
+  // Update count label
+  const n = state.colors.length;
+  document.getElementById('colorCount').textContent = `${n} color${n!==1?'s':''}`;
+}
+
+function buildColorCard(color, idx) {
+  const card = document.createElement('div');
+  card.className = 'color-card';
+  card.dataset.id = color.id;
+  card.setAttribute('role','listitem');
+  card.innerHTML = `
+    <div class="color-card-top">
+      <div class="swatch-picker" title="Click to pick color" aria-label="Color ${idx+1} picker">
+        <div class="swatch-bg"></div>
+        <input type="color" aria-label="Color ${idx+1} native picker">
+      </div>
+      <div class="color-info">
+        <div class="color-name-row">
+          <span class="color-index">Color ${idx+1}</span>
+          <input type="text" class="hex-input" maxlength="7" spellcheck="false" aria-label="Color ${idx+1} hex input">
+        </div>
+      </div>
+      <button class="remove-btn" aria-label="Remove color ${idx+1}" title="Remove">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="qty-controls">
+      <div class="qty-slider-wrap">
+        <div class="qty-slider-label">Quantity</div>
+        <input type="range" class="qty-slider" min="0" step="1" aria-label="Color ${idx+1} quantity slider">
+      </div>
+      <input type="number" class="qty-number" min="0" step="1" aria-label="Color ${idx+1} quantity value">
+      <div class="qty-pct-badge">—%</div>
+    </div>
+  `;
+
+  // ── Events ──
+  const picker  = card.querySelector('input[type="color"]');
+  const hexInp  = card.querySelector('.hex-input');
+  const slider  = card.querySelector('.qty-slider');
+  const numInp  = card.querySelector('.qty-number');
+  const remBtn  = card.querySelector('.remove-btn');
+
+  picker.addEventListener('input', e => {
+    mutateColor(color.id, { hex: e.target.value });
+    hexInp.value = e.target.value.toUpperCase();
+    hexInp.classList.remove('invalid');
+  });
+
+  hexInp.addEventListener('input', e => {
+    let v = e.target.value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    const rgb = hexToRgb(v);
+    if (rgb) {
+      mutateColor(color.id, { hex: v.toLowerCase() });
+      picker.value = rgbToHex(rgb);
+      hexInp.classList.remove('invalid');
+    } else {
+      hexInp.classList.add('invalid');
+    }
+  });
+
+  hexInp.addEventListener('blur', () => {
+    const c = state.colors.find(x=>x.id===color.id);
+    if (c && hexToRgb(c.hex)) hexInp.value = rgbToHex(hexToRgb(c.hex)).toUpperCase();
+    hexInp.classList.remove('invalid');
+  });
+
+  slider.addEventListener('input', e => {
+    mutateColor(color.id, { qty: parseFloat(e.target.value) });
+    numInp.value = e.target.value;
+    renderResult(); renderTotal(); renderCompBars();
+  });
+
+  numInp.addEventListener('input', e => {
+    let v = parseFloat(e.target.value);
+    if (isNaN(v) || v < 0) v = 0;
+    const max = UNIT_MAX[state.unit];
+    if (v > max) v = max;
+    mutateColor(color.id, { qty: v });
+    slider.value = v;
+    renderResult(); renderTotal(); renderCompBars();
+  });
+
+  remBtn.addEventListener('click', () => {
+    if (state.colors.length <= 1) { showToast('Need at least one color'); return; }
+    state.colors = state.colors.filter(c => c.id !== color.id);
+    render();
+  });
+
+  return card;
+}
+
+function updateColorCard(card, color, idx, unit) {
+  const swatch  = card.querySelector('.swatch-bg');
+  const picker  = card.querySelector('input[type="color"]');
+  const hexInp  = card.querySelector('.hex-input');
+  const slider  = card.querySelector('.qty-slider');
+  const numInp  = card.querySelector('.qty-number');
+  const badge   = card.querySelector('.qty-pct-badge');
+  const label   = card.querySelector('.color-index');
+
+  label.textContent = `Color ${idx+1}`;
+
+  if (hexToRgb(color.hex)) {
+    swatch.style.backgroundColor = color.hex;
+    picker.value = rgbToHex(hexToRgb(color.hex));
+    if (document.activeElement !== hexInp) hexInp.value = color.hex.toUpperCase();
+  }
+
+  const max = UNIT_MAX[unit];
+  const step = UNIT_STEP[unit];
+  slider.max = max; slider.step = step;
+  numInp.max = max; numInp.step = step;
+
+  if (document.activeElement !== slider) slider.value = color.qty;
+  if (document.activeElement !== numInp) numInp.value = color.qty;
+
+  // Gradient on slider track
+  slider.style.background = `linear-gradient(to right, ${color.hex} ${(color.qty/max*100).toFixed(1)}%, var(--surface3) ${(color.qty/max*100).toFixed(1)}%)`;
+
+  // Contribution pct badge
+  const contribs = getContributions();
+  const thisC = contribs.find(c=>c.id===color.id);
+  badge.textContent = thisC ? thisC.pct.toFixed(1)+'%' : '0%';
+}
+
+function mutateColor(id, patch) {
+  const idx = state.colors.findIndex(c=>c.id===id);
+  if (idx>=0) state.colors[idx] = { ...state.colors[idx], ...patch };
+  render();
+}
+
+/* ── Result ── */
+function renderResult() {
+  const mixed = blendMultiple(state.colors);
+  const hex   = rgbToHex(mixed);
+  const rgb   = rgbString(mixed);
+  const hsl   = rgbToHsl(mixed);
+
+  document.getElementById('resultSwatch').style.backgroundColor = hex;
+  document.getElementById('resultHexLabel').textContent = hex.toUpperCase();
+  document.getElementById('outHex').textContent = hex.toUpperCase();
+  document.getElementById('outRgb').textContent = rgb;
+  document.getElementById('outHsl').textContent = hsl;
+
+  // Gradient strip
+  const validColors = state.colors.filter(c=>hexToRgb(c.hex));
+  const stops = validColors.map((c,i)=>`${c.hex} ${(i/(Math.max(validColors.length-1,1))*100).toFixed(0)}%`).join(', ');
+  document.getElementById('gradientStrip').style.background =
+    validColors.length > 1 ? `linear-gradient(to right, ${stops})` : validColors[0]?.hex || '#888';
+
+  renderCompBars();
+  updateMeshBlobs();
+}
+
+function renderCompBars() {
+  const contribs = getContributions();
+  const bars = document.getElementById('compBars');
+  bars.innerHTML = '';
+  for (const c of contribs) {
+    const row = document.createElement('div');
+    row.className = 'comp-bar-row';
+    row.innerHTML = `
+      <div class="comp-dot" style="background:${c.hex}"></div>
+      <div class="comp-bar-track">
+        <div class="comp-bar-fill" style="width:${c.pct.toFixed(2)}%;background:${c.hex}"></div>
+      </div>
+      <div class="comp-pct">${c.pct.toFixed(1)}%</div>
+    `;
+    bars.appendChild(row);
+  }
+}
+
+/* ── Total ── */
+function renderTotal() {
+  const total = state.colors.reduce((s,c)=>s+c.qty, 0);
+  const u = UNIT_LABEL[state.unit];
+  const el = document.getElementById('totalDisplay');
+  const fmt = state.unit === 'l' ? total.toFixed(2) : Math.round(total);
+  el.textContent = `${fmt} ${u}`;
+  // Warn if percentages exceed 100
+  if (state.unit === 'pct' && total > 100.5) {
+    el.className = 'total-value total-warn';
+    el.textContent += ' ⚠ > 100%';
+  } else {
+    el.className = 'total-value';
+  }
+}
+
+/* ── Mesh blobs follow mix color ── */
+function updateMeshBlobs() {
+  const contribs = getContributions();
+  if (contribs.length >= 1) {
+    document.getElementById('blob1').style.background = contribs[0].hex;
+  }
+  if (contribs.length >= 2) {
+    document.getElementById('blob2').style.background = contribs[contribs.length-1].hex;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADD COLOR
+// ═══════════════════════════════════════════════════════
+const PALETTE = ['#06b6d4','#22c55e','#f59e0b','#ec4899','#a78bfa','#14b8a6','#f97316','#6366f1'];
+let paletteIdx = 2;
+
+document.getElementById('addColorBtn').addEventListener('click', () => {
+  const hex = PALETTE[paletteIdx % PALETTE.length];
+  paletteIdx++;
+  state.colors.push({ id: uid(), hex, qty: UNIT_DEFAULTS[state.unit] });
+  render();
+  // Scroll to bottom of list
+  setTimeout(() => {
+    const last = document.getElementById('color-list').lastElementChild;
+    last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+});
+
+// ═══════════════════════════════════════════════════════
+//  UNIT TOGGLE
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.unit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const newUnit = btn.dataset.unit;
+    if (newUnit === state.unit) return;
+
+    // Convert existing quantities
+    const oldUnit = state.unit;
+    state.colors = state.colors.map(c => ({
+      ...c,
+      qty: convertQty(c.qty, oldUnit, newUnit),
+    }));
+    state.unit = newUnit;
+
+    document.querySelectorAll('.unit-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.unit === newUnit);
+      b.setAttribute('aria-pressed', b.dataset.unit === newUnit);
+    });
+    render();
+  });
+});
+
+function convertQty(val, from, to) {
+  // Normalize to ml first
+  let ml = from === 'pct' ? val         // treat % as ml for conversion
+         : from === 'l'   ? val * 1000
+         :                  val;
+
+  if (from === 'pct' && to === 'ml')  return parseFloat(val.toFixed(1));
+  if (from === 'pct' && to === 'l')   return parseFloat((val / 1000).toFixed(3));
+  if (from === 'ml'  && to === 'pct') return parseFloat(val.toFixed(1));
+  if (from === 'ml'  && to === 'l')   return parseFloat((val / 1000).toFixed(3));
+  if (from === 'l'   && to === 'ml')  return parseFloat((val * 1000).toFixed(1));
+  if (from === 'l'   && to === 'pct') return parseFloat((val * 1000).toFixed(1));
+  return val;
+}
+
+// ═══════════════════════════════════════════════════════
+//  THEME TOGGLE
+// ═══════════════════════════════════════════════════════
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeIconDark').style.display  = isDark ? 'none'  : '';
+  document.getElementById('themeIconLight').style.display = isDark ? ''      : 'none';
+  showToast(isDark ? 'Light mode on' : 'Dark mode on');
+});
+
+// ═══════════════════════════════════════════════════════
+//  COPY
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.copy-btn[data-copy]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const key = btn.dataset.copy;
+    const map = { hex: 'outHex', rgb: 'outRgb', hsl: 'outHsl' };
+    const val = document.getElementById(map[key])?.textContent || '';
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(val);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = val;
+        ta.style.cssText='position:fixed;left:-9999px;opacity:0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      showToast(`${key.toUpperCase()} copied`);
+      btn.classList.add('ok');
+      setTimeout(()=>btn.classList.remove('ok'), 1500);
+    } catch { showToast('Copy failed'); }
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<div class="toast-pip"></div><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('out');
+    t.addEventListener('animationend', ()=>t.remove(), {once:true});
+  }, 1800);
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>
